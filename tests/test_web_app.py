@@ -8,7 +8,9 @@ def test_root_is_self_contained_workspace():
     assert response.status_code == 200
     assert "SpoolTag Studio" in html
     assert 'id="readerSelect"' in html
+    assert 'id="themeToggle"' in html
     assert 'id="writeButton"' in html
+    assert "spooltag-theme" in html
     assert "cdn.jsdelivr.net" not in html
     assert "code.jquery.com" not in html
 

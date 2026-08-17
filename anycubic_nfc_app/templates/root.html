@@ -3,9 +3,21 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f4f6f7">
+    <meta name="theme-color" id="themeColor" content="#f4f6f7">
     <title>SpoolTag Studio</title>
     <link rel="icon" type="image/svg+xml" href="/static/images/spooltag-icon.svg">
+    <script>
+        (() => {
+            let theme = "light";
+            try {
+                theme = localStorage.getItem("spooltag-theme")
+                    || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            } catch (_) {
+                theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            }
+            document.documentElement.dataset.theme = theme;
+        })();
+    </script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -18,9 +30,15 @@
                 <small>STUDIO</small>
             </span>
         </div>
-        <div class="header-device">
-            <span class="status-dot" id="connectionDot"></span>
-            <span id="connectionState">No reader</span>
+        <div class="header-actions">
+            <button class="theme-toggle" id="themeToggle" type="button" title="Use dark mode" aria-label="Use dark mode" aria-pressed="false">
+                <i data-lucide="moon" class="theme-moon"></i>
+                <i data-lucide="sun" class="theme-sun"></i>
+            </button>
+            <div class="header-device">
+                <span class="status-dot" id="connectionDot"></span>
+                <span id="connectionState">No reader</span>
+            </div>
         </div>
     </header>
 
