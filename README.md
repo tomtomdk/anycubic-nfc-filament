@@ -1,140 +1,75 @@
-# Anycubic NFC Filament
+# SpoolTag Studio
 
-A tool to create NFC tags compatible with the Anycubic ACE Pro for third party filament spools.
+SpoolTag Studio is an offline Windows desktop utility for reading and writing filament profile data on NFC tags used with Anycubic ACE-compatible workflows. It provides an embedded desktop window, live PC/SC reader selection, filament presets, tag reading and writing, and raw dump export.
 
-<p align="center">
-  <img src="readme_images/nfc_app_main.png" width="49%" />
-  <img src="readme_images/nfc_app_write.png" width="49%" />
-</p>
+This is an unofficial community utility. Anycubic is a trademark of its respective owner and does not endorse this project.
 
-## Required Hardware
+## Download
 
-> Tip: Try to get the software up and running before buying the hardware to ensure that everything works fine
+- [Portable Windows application](dist/SpoolTagStudio.exe)
+- [Windows installer](dist/installer/SpoolTagStudio-Setup-0.1.0.exe)
+- [SHA-256 checksums](dist/SHA256SUMS.txt)
 
-The following hardware is needed (buy them via my affiliate links to support this project without additional costs):
+## Hardware
 
-- A supported reader from this list:
-    - ACR122U NFC reader (recommended). Buy one [here](https://amzn.to/4h24oZQ) (affiliate link)
-    - ACR1252U NFC reader (community-tested). Buy one [here](https://amzn.to/3E6WPUo) (affiliate link)
-    - ACR1552U NFC reader (community-tested). Buy one [here](https://amzn.to/4dwD4mv) (affiliate link)
-- NTAG213 NFC stickers. Buy some [here](https://amzn.to/4kzatQm) (affiliate link)
-    - (NTAG215 and NTAG216 probable also work)
-- (Optional) Reusable ACE Pro rings for cardboard spools with NFC sticker slot. Get the for
-  free [here](https://makerworld.com/en/models/1266132-universal-cardboard-spool-adapter-ring-v2-nfc#profileId-1291900)
+- A Windows-compatible PC/SC contactless reader
+- NTAG213 tags (two tags are normally used per spool)
 
-*Note: You will need two NFC stickers per spool of filament.*
+Tested reader profiles currently include:
 
-## Using the Tool
+- Chameleon Ultra over USB (firmware 2.0 or newer; current firmware recommended)
+- ACR122U
+- ACR1252U PICC interface
+- ACR1552U PICC interface
 
-### Option 1: Executable File for Windows Systems (Easy)
+Other PC/SC readers appear in the reader menu as untested devices and can be selected manually. Install the manufacturer's Windows driver before starting the app. Chameleon Ultra devices are detected by USB VID/PID and communicate through their serial port; close ChameleonUltraGUI before selecting the device because only one application can own the port.
 
-1) Download the latest `.exe` file of the
-   application [here](https://github.com/Molodos/anycubic-nfc-filament/releases/latest)
-2) Install drivers for your reader (find ACR122U
-   drivers [here](https://www.acs.com.hk/en/driver/3/acr122u-usb-nfc-reader/))
-3) Start the application on your Windows device by just double-clicking it
-4) Open the web interface in your browser (e.g. Google Chrome) by entering http://localhost:8080 into the top bar
-5) Make sure that a [ACR122U](https://amzn.to/4h24oZQ) (affiliate link) is connected to your computer
-6) Done. Have fun using the software :)
+## Run From Source
 
-#### Generating the Executable File by Yourself
+Python 3.11 is recommended.
 
-> Note: This is not needed if you just download the `.exe` file
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m anycubic_nfc_app
+```
 
-1) Install the requirements with `pip install -r requirements.txt`
-2) Create the binary for your system:
-   ```shell
-   pyinstaller AnycubicNFCApp.spec
-   ```
-3) The executable can be found in the `dist` folder
+The application opens in a native window. To use a regular browser for troubleshooting:
 
-### Option 2: Running the Python Script for all Systems (Intermediate)
+```powershell
+python -m anycubic_nfc_app --browser
+```
 
-> For a more comprehensive guide, you can check out my YouTube video [here](https://youtu.be/I4hJaSD-rVs) (German)
+Reader selection is saved in `%APPDATA%\SpoolTag Studio\settings.json`. Automatic mode selects a tested reader and ignores untested interfaces such as a reader's SAM slot.
 
-1) Make sure that [python 3.11](https://www.python.org/downloads/release/python-3118/) is installed on your
-   computer (the version 3.11 is important, older versions should be good but newer version lead to errors)
-2) Clone this repository and go to the root directory (the one with the `requirements.txt`) with a shell (on most
-   operating systems, you can open the folder and then right-click and select something like `open shell here`)
-3) Do the upcoming steps within the shell hust opened
-4) Install the requirements with the command `pip install -r requirements.txt` (try `pip3 install -r requirements.txt`
-   if `pip` isn't found)
-5) Install drivers for your reader (find ACR122U
-   drivers [here](https://www.acs.com.hk/en/driver/3/acr122u-usb-nfc-reader/))
-6) Start the tool with the shell command `python -m anycubic_nfc_app` (try `python3 -m anycubic_nfc_app` if `python`
-   isn't found)
-7) Open the web interface in your browser (e.g. Google Chrome) by entering http://localhost:8080 into the top bar
-8) Make sure that a [ACR122U](https://amzn.to/4h24oZQ) (affiliate link) is connected to your computer
-9) Done. Have fun using the software :)
+## Build
 
-## Supporting the Research
+Install development dependencies, then build the portable one-file executable:
 
-Within the tool, you can create dumps of original Anycubic spool tags to support my research. The dump of one of the two
-spool sides is enough.
+```powershell
+pip install -r requirements-dev.txt
+.\build.ps1
+```
 
-You can send me your dumps via email
-to [anycubic-nfc-research@molodos.com](mailto:anycubic-nfc-research@molodos.com?subject=Anycubic%20NFC%20Tag%20Research&body=Material%20(e.g.%20%22PLA%2B%22)%3A%0AColor%20(e.g.%20%22Pearl%20Black%22)%3A%0AAdditional%20information%3A%0A%0A(please%20don't%20forget%20to%20attach%20the%20dump%20file)).
-Please include details on which exact spool you scanned (material, color, etc.).
+The portable application is written to `dist\SpoolTagStudio.exe`.
 
-Thanks for your support!
+To also create a per-user Windows installer, install Inno Setup 6 and run:
 
-## FAQ
+```powershell
+.\build.ps1 -Installer
+```
 
-### Why is the material type not displaying/recognized correctly on my printer?
+The installer is written to `dist\installer`.
 
-Try updating your ACE Pro (you can do that on the top right of the "Workbench" in Anycubic Slicer Next)
+## Test
 
-### Why does the filament show as "?" in my slicer "Workbench" tab?
+```powershell
+pytest
+```
 
-There currently seems to be a problem with displaying some filaments in the slicer "Workbench" tab correctly. Probably
-because they are not available with official RFID chips in the store yet. But: When syncing the ACE Pro in the "Prepare"
-tab in your slicer, the right filament is selected.
+The automated tests do not require an NFC reader. Physical-device validation is still required before publishing a release.
 
-Currently, only the following filaments are displayed correctly in the "Workbench" tab: PLA, PLA+, PLA High Speed (if
-you own official spools of other types with RFID chips, create a spool dump in the application and send it to me, to
-support my research and add it to the app. Read more in [this section](#supporting-the-research))
+## Attribution And Distribution
 
-### Why is the wrong filament type selected when syncing with the ACE Pro in the "Prepare" tab?
-
-Make sure that the filament in the ACE Pro is available in the filament dropdown in your slicer. If not, select "
-Add/Remove filament" on the bottom of the list, add the filament to the list and try syncing again.
-
-Currently, there is another known problem where PLA+ is recognized as PLA. As I have not found a workaround yet, I
-believe that it is a bug in the slicer that will also occur with official PLA+ filament from Anycubic.
-
-### Why is the application not starting?
-
-If the application fails to start, the error is the python version in most cases. Make sure to use version 3.11 or
-older. Newer versions can lead to crashes.
-
-### Is there support for writing other brands to the Tags?
-
-While brands are sort of written to the tags (e.g. the Tag contains `AC` for `Anycubic`), the information is not used by
-the slicer. Because of that, I did not add support for writing custom brands as they would not have any benefit but more
-like a risk that Anycubic could ignore non-Anycubic tags in the future.
-
-### How can I use other NFC readers than the ACR122U?
-
-Readers not on the hardware list are currently not supported. But you can still try using them by adding start options
-to the application. The following two options are available:
-
-| Option                                                                   | Description                                                                                                                                                            |
-|--------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--print_readers`                                                        | Add this option to print a list of connected card readers to the shell, when starting the application (use it to find the name for the second option)                  |
-| `--preferred_reader "<string>"` (example: `--preferred_reader "acr122"`) | Use this option to set your preferred reader to be selected from the connected readers (it selects the last reader in the list, which contains the string in its name) |
-
-The additional options can be added to the command starting the application:
-
-- Option 1 (launching the exe from a shell): `AnycubicNFCApp.exe --print_readers --preferred_reader "acr122"`
-- Option 2 (python script): `python -m anycubic_nfc_app --print_readers --preferred_reader "acr122"`
-
-If you tested a reader successfully, and you want me to add it for official support, you can do this by sending me the
-list of connected readers displayed with the option `--print_readers` and the reader connected as well as the name of
-the displayed readers which works when putting it into the `--preferred_reader` parameter. Make sure to test that
-reading and writing works.
-
-## Credits
-
-Special thanks
-to [u/SnooCheesecakes1269](https://www.reddit.com/user/SnooCheesecakes1269/), [u/kivulhepy](https://www.reddit.com/user/kivulhepy/), [u/Nearby_Farmer_4983](https://www.reddit.com/user/Nearby_Farmer_4983/)
-for providing me with NFC tag dumps, so I was able to reverse-engineer the format of the tags.
+The NFC format research and initial implementation were based on [Molodos/anycubic-nfc-filament](https://github.com/Molodos/anycubic-nfc-filament). That upstream repository did not include a software license when this version was created. Public redistribution of derivative code requires permission from the upstream copyright holder or an independently implemented replacement for the format layer.
