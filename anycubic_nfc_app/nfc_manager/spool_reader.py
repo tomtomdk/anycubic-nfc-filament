@@ -1,6 +1,7 @@
 import json
 from typing import Any, Optional
 
+from ..filaments import FILAMENT_SKUS, SKU_PREFIX_TYPES
 from .nfc_reader import CardData, NFCReader
 
 
@@ -9,30 +10,8 @@ class SpoolData(CardData):
     Spool data
     """
 
-    SKUS: dict[str, str] = {
-        "PLA": "AHPLBK-101",
-        "PLA+": "AHPLPBK-102",  # Material name not recognized by slicer (recognized as PLA)
-        "PLA High Speed": "AHHSBK-102",
-        "PLA Matte": "HYGBK-101",  # SKU not recognized by slicer
-        "PLA Silk": "HSCWH-101",  # SKU not recognized by slicer
-        "PETG": "HPEBK-103",  # SKU not recognized by slicer
-        "ASA": "HASBK-101",  # SKU not recognized by slicer
-        "ABS": "HABBK-102",  # SKU not recognized by slicer
-        "TPU": "HTPBK-101",  # SKU not recognized by slicer
-        "PLA Luminous": "HFGBL-101"  # SKU not recognized by slicer
-    }
-    SKU_PREFIXES: dict[str, str] = {
-        "AHPL": "PLA",
-        "AHPLP": "PLA+",
-        "AHHS": "PLA High Speed",
-        "HYG": "PLA Matte",
-        "HSC": "PLA Silk",
-        "HPE": "PETG",
-        "HAS": "ASA",
-        "HAB": "ABS",
-        "HTP": "TPU",
-        "HFG": "PLA Luminous"
-    }
+    SKUS: dict[str, str] = FILAMENT_SKUS
+    SKU_PREFIXES: dict[str, str] = SKU_PREFIX_TYPES
 
     def __init__(self, spool_specs: Optional[dict[str, Any]] = None):
         """
@@ -248,15 +227,21 @@ class SpoolData(CardData):
                 possible_prefixes.append(p)
         possible_prefixes.sort(key=len, reverse=True)
         read_type: str = self._read_string(0x0f)
-        sku_type: str = self.SKU_PREFIXES[possible_prefixes[0]] if possible_prefixes else read_type
         possible_types: list[str] = self.get_available_filament_types()
-        if sku_type not in possible_types:
-            sku_type = possible_types[0]
+        is_custom = self._read_byte(0x27, 3) == 0x4d
+        if is_custom and read_type in possible_types:
+            filament_type = read_type
+        elif possible_prefixes:
+            filament_type = self.SKU_PREFIXES[possible_prefixes[0]]
+        elif read_type in possible_types:
+            filament_type = read_type
+        else:
+            filament_type = possible_types[0]
 
         # Read specs
         spool_specs: dict[str, Any] = {
             "uid": self.read_uid(),
-            "type": sku_type,
+            "type": filament_type,
             "manufacturer": self._read_string(0x0a),
             "color": self._read_color(0x14),
             "range_a": {
@@ -285,7 +270,7 @@ class SpoolData(CardData):
             "raw": {  # Raw data for research purposes
                 "sku": sku,
                 "type": read_type,
-                "is_custom": self._read_bytes(0x27, 3) == 0x4d
+                "is_custom": is_custom
             },
         }
 
@@ -305,18 +290,18 @@ class SpoolReader:
     Reader/writer for Anycubic filament spools
     """
 
-    def __init__(self):
+    def __init__(self, selected_reader: Optional[str] = None):
         """
         Initialize card reader
         """
-        self.reader: NFCReader = NFCReader()
+        self.reader: NFCReader = NFCReader(selected_reader=selected_reader)
 
     def get_connection_state(self) -> bool:
         """
         Get the current connection state
         :return: True if connected else False
         """
-        return self.reader.reader is not None
+        return self.reader.is_connected()
 
     def cancel_wait_for_tag(self) -> None:
         """

@@ -1,6 +1,5 @@
-Flask
-pyscard
-Flask-SocketIO
-eventlet
-argparse
-pyinstaller
+Flask>=3.0,<4
+Flask-SocketIO>=5.3,<6
+pyscard>=2.0,<3
+pyserial>=3.5,<4
+pywebview>=5.0,<7

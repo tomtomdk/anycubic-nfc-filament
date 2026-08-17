@@ -1,6 +1,12 @@
 venv/
 .idea/
 __pycache__/
-dist/
+dist/*
+!dist/SpoolTagStudio.exe
+!dist/SHA256SUMS.txt
+!dist/installer/
+dist/installer/*
+!dist/installer/SpoolTagStudio-Setup-*.exe
 build/
 *.iml
+.pytest_cache/

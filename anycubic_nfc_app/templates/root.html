@@ -1,223 +1,189 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    {% include 'components/head.html' %}
-    <style id="optionalStyle">
-        .optional {display: none;}
-
-    </style>
-    <style id="connectionDotStyle">
-        #connectionDot {background-color: #ed143d;}
-
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6f7">
+    <title>SpoolTag Studio</title>
+    <link rel="icon" type="image/svg+xml" href="/static/images/spooltag-icon.svg">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
-
-<body id="body">
-<div class="container py-4">
-    <header class="pb-3 mb-4 border-bottom d-flex justify-content-between  justify-content-center">
-        <a href="https://www.youtube.com/@molodos" target="_blank"
-           class="d-flex align-items-center text-body-emphasis text-decoration-none">
-            <img src="/static/images/favicon/favicon.ico" height="32">
-            <span class="fs-4" style="margin-left: 16px;">Anycubic NFC App by Molodos</span>
-        </a>
-        <span class="fs-5" style="align-content: end;"><span id="connectionDot"></span>NFC Reader <span
-                id="connectionState">Disconnected</span></span>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <div class="brand" aria-label="SpoolTag Studio">
+            <span class="brand-mark"><i data-lucide="radio-tower"></i></span>
+            <span>
+                <strong>SpoolTag</strong>
+                <small>STUDIO</small>
+            </span>
+        </div>
+        <div class="header-device">
+            <span class="status-dot" id="connectionDot"></span>
+            <span id="connectionState">No reader</span>
+        </div>
     </header>
 
-    <div class="p-5 mb-4 bg-secondary-subtle border rounded-3">
-        <div class="container-fluid py-5">
-            <h1 class="display-5 fw-bold">Configure Spool Data</h1>
-            <p class="col-md-8 fs-4">Use this tool to configure your spool data and write it to a NFC tag for a third
-                party spool in a ACE Pro compatible way.</p>
-            <form id="spoolForm" class="fs-5">
-                <div class="row">
-                    <div class="col-sm-3 mb-3">
-                        <label for="type" class="form-label">Filament Type</label>
-                        <select class="form-select" id="type" name="type" aria-describedby="typeHelp" required>
-                            <option value="" selected disabled>(Select filament type)</option>
-                            {% for type in filament_types %}
-                            <option value="{{ type }}">{{ type }}</option>
-                            {% endfor %}
-                        </select>
-                        <div id="typeHelp" class="form-text fs-6">Changing the type will update the temperature and
-                            speed presets below
-                        </div>
-                    </div>
-                    <div class="col-sm-2 mb-3">
-                        <label class="form-label">Color</label>
-                        <div id="colorPicker"></div>
-                        <input type="hidden" id="colorInput" name="color" required>
-                    </div>
+    <main class="workspace">
+        <section class="workspace-heading">
+            <div>
+                <p class="eyebrow">ACE-compatible tag workspace</p>
+                <h1>Filament profile</h1>
+            </div>
+            <div class="reader-control">
+                <label for="readerSelect">NFC reader</label>
+                <div class="select-row">
+                    <select id="readerSelect" aria-label="NFC reader">
+                        <option value="">Automatic</option>
+                    </select>
+                    <button class="icon-button" id="refreshReaders" type="button" title="Refresh readers" aria-label="Refresh readers">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
                 </div>
-                <div class="row">
-                    <div class="col-sm-6 mb-3">
-                        <label for="bedMin" class="form-label">Bed Temperature Range (°C)</label>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="bedMin" name="bedMin"
-                                       placeholder="Min bed temp" required>
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="bedMax" name="bedMax"
-                                       placeholder="Max bed temp" required>
-                            </div>
+                <span class="reader-detail" id="readerDetail">Scanning PC/SC devices...</span>
+            </div>
+        </section>
+
+        <div class="workspace-grid">
+            <form id="spoolForm" class="profile-panel">
+                <section class="form-section identity-section">
+                    <div class="section-heading">
+                        <span class="section-number">01</span>
+                        <div>
+                            <h2>Material</h2>
+                            <p>Core spool identity and display color.</p>
                         </div>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 mb-3 optional">
-                        <label for="speedMinA" class="form-label">Speed Range (mm/s)</label>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="speedMinA" name="speedMinA"
-                                       placeholder="(Optional)">
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="speedMaxA" name="speedMaxA"
-                                       placeholder="(Optional)">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 mb-3">
-                        <label for="nozzleMinA" class="form-label">Nozzle Temperature Range (°C)</label>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="nozzleMinA" name="nozzleMinA"
-                                       placeholder="Min nozzle temp" required>
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="nozzleMaxA" name="nozzleMaxA"
-                                       placeholder="Max nozzle temp" required>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 mb-3 optional">
-                        <label for="speedMinB" class="form-label">Speed Range 2 (mm/s)</label>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="speedMinB" name="speedMinB"
-                                       placeholder="(Optional)">
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="speedMaxB" name="speedMaxB"
-                                       placeholder="(Optional)">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 mb-3 optional">
-                        <label for="nozzleMinB" class="form-label">Nozzle Temperature Range 2 (°C)</label>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="nozzleMinB" name="nozzleMinB"
-                                       placeholder="(Optional)">
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="nozzleMaxB" name="nozzleMaxB"
-                                       placeholder="(Optional)">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 mb-3 optional">
-                        <label for="speedMinC" class="form-label">Speed Range 3 (mm/s)</label>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="speedMinC" name="speedMinC"
-                                       placeholder="(Optional)">
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="speedMaxC" name="speedMaxC"
-                                       placeholder="(Optional)">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 mb-3 optional">
-                        <label for="nozzleMinC" class="form-label">Nozzle Temperature Range 3 (°C)</label>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="nozzleMinC" name="nozzleMinC"
-                                       placeholder="(Optional)">
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="number" min="0" class="form-control" id="nozzleMaxC" name="nozzleMaxC"
-                                       placeholder="(Optional)">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" name="showOptional"
-                               id="optionalFields">
-                        <label class="form-check-label" for="optionalFields">
-                            Show advanced spool data fields (optional)
+                    <div class="field-grid identity-grid">
+                        <label class="field">
+                            <span>Filament type</span>
+                            <select id="type" name="type" required>
+                                {% for type in filament_types %}
+                                <option value="{{ type }}">{{ type }}</option>
+                                {% endfor %}
+                            </select>
                         </label>
+                        <fieldset class="field color-field">
+                            <legend>Color</legend>
+                            <div class="swatches" id="colorSwatches"></div>
+                            <label class="custom-color" title="Choose custom color">
+                                <input type="color" id="colorInput" name="color" value="#e6322b" required>
+                                <i data-lucide="pipette"></i>
+                                <span>Custom</span>
+                            </label>
+                        </fieldset>
                     </div>
-                </div>
-                <button class="btn btn-outline-dark btn-lg mt-2 me-2" type="button" onclick="readTag()">Read from NFC
-                    Tag
-                </button>
-                <button class="btn btn-dark btn-lg mt-2" type="button" onclick="writeTag()">Write to NFC Tag</button>
+                </section>
+
+                <section class="form-section">
+                    <div class="section-heading">
+                        <span class="section-number">02</span>
+                        <div>
+                            <h2>Temperatures</h2>
+                            <p>Recommended operating ranges in Celsius.</p>
+                        </div>
+                    </div>
+                    <div class="range-grid">
+                        <div class="range-group">
+                            <span class="range-label"><i data-lucide="flame"></i> Nozzle</span>
+                            <label class="number-field"><span>Min</span><input type="number" min="0" max="400" id="nozzleMinA" required><b>°C</b></label>
+                            <span class="range-separator">to</span>
+                            <label class="number-field"><span>Max</span><input type="number" min="0" max="400" id="nozzleMaxA" required><b>°C</b></label>
+                        </div>
+                        <div class="range-group">
+                            <span class="range-label"><i data-lucide="thermometer"></i> Bed</span>
+                            <label class="number-field"><span>Min</span><input type="number" min="0" max="200" id="bedMin" required><b>°C</b></label>
+                            <span class="range-separator">to</span>
+                            <label class="number-field"><span>Max</span><input type="number" min="0" max="200" id="bedMax" required><b>°C</b></label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section advanced-section">
+                    <button class="advanced-toggle" id="advancedToggle" type="button" aria-expanded="false" aria-controls="advancedFields">
+                        <span><i data-lucide="sliders-horizontal"></i> Advanced print ranges</span>
+                        <i data-lucide="chevron-down" class="chevron"></i>
+                    </button>
+                    <div id="advancedFields" class="advanced-fields" hidden>
+                        <div class="advanced-row">
+                            <strong>Range 1</strong>
+                            <label class="compact-field"><span>Speed min</span><input type="number" min="0" id="speedMinA" placeholder="0"></label>
+                            <label class="compact-field"><span>Speed max</span><input type="number" min="0" id="speedMaxA" placeholder="0"></label>
+                        </div>
+                        <div class="advanced-row">
+                            <strong>Range 2</strong>
+                            <label class="compact-field"><span>Speed min</span><input type="number" min="0" id="speedMinB" placeholder="0"></label>
+                            <label class="compact-field"><span>Speed max</span><input type="number" min="0" id="speedMaxB" placeholder="0"></label>
+                            <label class="compact-field"><span>Nozzle min</span><input type="number" min="0" id="nozzleMinB" placeholder="0"></label>
+                            <label class="compact-field"><span>Nozzle max</span><input type="number" min="0" id="nozzleMaxB" placeholder="0"></label>
+                        </div>
+                        <div class="advanced-row">
+                            <strong>Range 3</strong>
+                            <label class="compact-field"><span>Speed min</span><input type="number" min="0" id="speedMinC" placeholder="0"></label>
+                            <label class="compact-field"><span>Speed max</span><input type="number" min="0" id="speedMaxC" placeholder="0"></label>
+                            <label class="compact-field"><span>Nozzle min</span><input type="number" min="0" id="nozzleMinC" placeholder="0"></label>
+                            <label class="compact-field"><span>Nozzle max</span><input type="number" min="0" id="nozzleMaxC" placeholder="0"></label>
+                        </div>
+                    </div>
+                </section>
             </form>
-        </div>
-    </div>
 
-    <div class="row align-items-md-stretch">
-        <div class="col-md-6 mb-2">
-            <div class="h-100 p-5 bg-info-subtle border rounded-3">
-                <h2>Help Researching</h2>
-                <p>Use this tool to create a dump of an original Anycubic spool tag to support the research for this
-                    app. The dump of one of the two spool sides is enough.</p>
-                <p>You can send me your dumps via email to <a
-                        href="mailto:anycubic-nfc-research@molodos.com?subject=Anycubic%20NFC%20Tag%20Research&body=Material%20(e.g.%20%22PLA%2B%22)%3A%0AColor%20(e.g.%20%22Pearl%20Black%22)%3A%0AAdditional%20information%3A%0A%0A(please%20don't%20forget%20to%20attach%20the%20dump%20file)">anycubic-nfc-research@molodos.com</a>.
-                    Please include details on which exact spool you scanned (material, color, etc.).</p>
-                <p>Thanks for your support!</p>
-                <button class="btn btn-outline-dark" type="button" onclick="createDump()">Create a Spool Dump</button>
-            </div>
-        </div>
-        <div class="col-md-6 mb-2">
-            <div class="h-100 p-5 bg-success-subtle border rounded-3 fs-5">
-                <h2>Required Hardware</h2>
-                <p>Buy the hardware via the affiliate links below to support this project without additional cost:</p>
-                <ul>
-                    <li>ACR122U NFC reader for reading and writing NFC tags. Get one
-                        <a href="https://amzn.to/4h24oZQ" target="_blank">here</a></li>
-                    <li>Two NTAG213 NFC tags are needed per spool. Get some
-                        <a href="https://amzn.to/4kzatQm" target="_blank">here</a></li>
-                    <li>(Optional) Reusable ACE Pro rings for cardboard spools with NFC sticker slot. Get the for free
-                        <a href="https://makerworld.com/en/models/1266132-universal-cardboard-spool-adapter-ring-v2-nfc#profileId-1291900"
-                           target="_blank">here</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
+            <aside class="action-panel">
+                <div class="device-visual" aria-hidden="true">
+                    <div class="device-ring"><i data-lucide="scan-line"></i></div>
+                    <span id="deviceVisualLabel">Reader offline</span>
+                </div>
 
-    {% include 'components/foot.html' %}
-    <script src="/static/script/optional-fields.js"></script>
-    <script src="/static/script/color-picker.js"></script>
-    <script src="/static/script/presets.js"></script>
-    <script>
-        updatePresets({{ filament_presets | tojson }});
-    </script>
-    <script src="/static/script/websocket.js"></script>
+                <div class="action-copy">
+                    <h2>Tag operations</h2>
+                    <p>Place one NTAG213 tag flat on the selected reader and keep it still until the operation completes.</p>
+                </div>
+
+                <button class="button primary" id="writeButton" type="button" disabled>
+                    <i data-lucide="radio"></i>
+                    <span><strong>Write tag</strong><small>Apply this filament profile</small></span>
+                </button>
+                <button class="button secondary" id="readButton" type="button" disabled>
+                    <i data-lucide="download"></i>
+                    <span><strong>Read tag</strong><small>Load an existing profile</small></span>
+                </button>
+                <button class="button quiet" id="dumpButton" type="button" disabled>
+                    <i data-lucide="file-down"></i>
+                    Export raw tag dump
+                </button>
+
+                <div class="compatibility-note">
+                    <i data-lucide="info"></i>
+                    <p>Supported readers: Chameleon Ultra over USB, ACR122U, ACR1252U PICC and ACR1552U PICC. Other PC/SC readers can be selected for testing.</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <span>SpoolTag Studio · Unofficial community utility</span>
+        <span>Format research based on <a href="https://github.com/Molodos/anycubic-nfc-filament" target="_blank">Molodos' original project</a></span>
+    </footer>
 </div>
 
-<div class="backdrop" id="backdrop" style="display: none;">
-    <div class="p-5 bg-secondary-subtle border rounded-3 nfc-overlay">
-        <img src="/static/images/nfc.png" style="width: 125px; height: 125px;">
-        <div class="nfc-text">
-            <h2>Waiting for NFC Tag...</h2>
-            <p class="fs-5">Please lay the NFC tag on the scanner. Make sure to not move it away until this prompt
-                closes automatically.</p>
-            <p class="fs-6 nfc-error" id="nfcError" style="display: none">An error occurred. Please remove the tag, wait
-                for the scanner light to turn red and try again (cancel if if won't turn green). Also make sure that a
-                NFC reader is connected.</p>
-            <button class="btn btn-outline-dark" type="button" onclick="cancelNFC()">Cancel</button>
+<div class="modal-backdrop" id="operationModal" hidden>
+    <div class="operation-dialog" role="dialog" aria-modal="true" aria-labelledby="operationTitle">
+        <div class="scan-animation"><i data-lucide="nfc"></i><span></span></div>
+        <div>
+            <p class="eyebrow" id="operationEyebrow">NFC operation</p>
+            <h2 id="operationTitle">Waiting for tag</h2>
+            <p id="operationMessage">Keep the tag on the reader until this window closes.</p>
+            <p class="operation-error" id="operationError" hidden></p>
+            <button class="button quiet cancel-button" id="cancelButton" type="button">Cancel</button>
         </div>
     </div>
 </div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>window.FILAMENT_PRESETS = {{ filament_presets | tojson }};</script>
+<script src="/static/vendor/lucide.min.js"></script>
+<script src="/static/vendor/socket.io.min.js"></script>
+<script src="/static/script/app.js"></script>
 </body>
 </html>
