@@ -1,13 +1,13 @@
 # SpoolTag Studio
 
-SpoolTag Studio is an offline Windows desktop utility for reading and writing filament profile data on NFC tags used with Anycubic ACE-compatible workflows. It provides an embedded desktop window, live PC/SC reader selection, filament presets, tag reading and writing, and raw dump export.
+SpoolTag Studio is an offline Windows desktop utility for reading and writing filament profile data on NFC tags used with Anycubic ACE-compatible workflows. It provides an embedded desktop window, a persistent light/dark theme, live PC/SC reader selection, filament presets, tag reading and writing, and raw dump export.
 
 This is an unofficial community utility. Anycubic is a trademark of its respective owner and does not endorse this project.
 
 ## Download
 
 - [Portable Windows application](dist/SpoolTagStudio.exe)
-- [Windows installer](dist/installer/SpoolTagStudio-Setup-0.1.0.exe)
+- [Windows installer](dist/installer/SpoolTagStudio-Setup-0.2.0.exe)
 - [SHA-256 checksums](dist/SHA256SUMS.txt)
 
 ## Hardware

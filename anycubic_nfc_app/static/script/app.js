@@ -14,6 +14,8 @@ const elements = {
     readerSelect: document.getElementById("readerSelect"),
     readerDetail: document.getElementById("readerDetail"),
     refreshReaders: document.getElementById("refreshReaders"),
+    themeToggle: document.getElementById("themeToggle"),
+    themeColor: document.getElementById("themeColor"),
     connectionDot: document.getElementById("connectionDot"),
     connectionState: document.getElementById("connectionState"),
     deviceVisual: document.querySelector(".device-visual"),
@@ -36,6 +38,39 @@ let readerSignature = "";
 let activeOperation = null;
 let operationCancelled = false;
 let toastTimer = null;
+const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+function getSavedTheme() {
+    try {
+        return localStorage.getItem("spooltag-theme");
+    } catch (_) {
+        return null;
+    }
+}
+
+function applyTheme(theme, persist = false) {
+    const isDark = theme === "dark";
+    document.documentElement.dataset.theme = isDark ? "dark" : "light";
+    elements.themeToggle.setAttribute("aria-pressed", String(isDark));
+    elements.themeToggle.title = isDark ? "Use light mode" : "Use dark mode";
+    elements.themeToggle.setAttribute("aria-label", elements.themeToggle.title);
+    elements.themeColor.content = isDark ? "#141a1d" : "#f4f6f7";
+    if (persist) {
+        try {
+            localStorage.setItem("spooltag-theme", isDark ? "dark" : "light");
+        } catch (_) {
+            // The selected theme still applies for this session.
+        }
+    }
+}
+
+elements.themeToggle.addEventListener("click", () => {
+    applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
+});
+systemTheme.addEventListener("change", (event) => {
+    if (!getSavedTheme()) applyTheme(event.matches ? "dark" : "light");
+});
+applyTheme(document.documentElement.dataset.theme);
 
 function showToast(message) {
     elements.toast.textContent = message;
