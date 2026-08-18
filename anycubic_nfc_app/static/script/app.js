@@ -14,6 +14,16 @@ const elements = {
     readerSelect: document.getElementById("readerSelect"),
     readerDetail: document.getElementById("readerDetail"),
     refreshReaders: document.getElementById("refreshReaders"),
+    updateToggle: document.getElementById("updateToggle"),
+    updateBadge: document.getElementById("updateBadge"),
+    updatePopover: document.getElementById("updatePopover"),
+    closeUpdates: document.getElementById("closeUpdates"),
+    currentVersion: document.getElementById("currentVersion"),
+    automaticUpdates: document.getElementById("automaticUpdates"),
+    updateStatus: document.getElementById("updateStatus"),
+    checkUpdates: document.getElementById("checkUpdates"),
+    installUpdate: document.getElementById("installUpdate"),
+    releaseLink: document.getElementById("releaseLink"),
     themeToggle: document.getElementById("themeToggle"),
     themeColor: document.getElementById("themeColor"),
     connectionDot: document.getElementById("connectionDot"),
@@ -38,6 +48,7 @@ let readerSignature = "";
 let activeOperation = null;
 let operationCancelled = false;
 let toastTimer = null;
+let updatesInitialized = false;
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 
 function getSavedTheme() {
@@ -71,6 +82,80 @@ systemTheme.addEventListener("change", (event) => {
     if (!getSavedTheme()) applyTheme(event.matches ? "dark" : "light");
 });
 applyTheme(document.documentElement.dataset.theme);
+
+function setUpdatePopover(open) {
+    elements.updatePopover.hidden = !open;
+    elements.updateToggle.setAttribute("aria-expanded", String(open));
+}
+
+elements.updateToggle.addEventListener("click", () => setUpdatePopover(elements.updatePopover.hidden));
+elements.closeUpdates.addEventListener("click", () => setUpdatePopover(false));
+document.addEventListener("click", (event) => {
+    if (!elements.updatePopover.hidden
+        && !elements.updatePopover.contains(event.target)
+        && !elements.updateToggle.contains(event.target)) {
+        setUpdatePopover(false);
+    }
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.updatePopover.hidden) {
+        setUpdatePopover(false);
+        elements.updateToggle.focus();
+    }
+});
+
+elements.automaticUpdates.addEventListener("change", () => {
+    socket.emit("set_update_preference", {automatic: elements.automaticUpdates.checked});
+});
+elements.checkUpdates.addEventListener("click", () => {
+    socket.emit("check_for_updates", {manual: true});
+});
+elements.installUpdate.addEventListener("click", () => {
+    elements.installUpdate.disabled = true;
+    socket.emit("install_update");
+});
+
+function initializeUpdates(updateState) {
+    elements.currentVersion.textContent = `Version ${updateState.current_version}`;
+    elements.automaticUpdates.checked = Boolean(updateState.automatic);
+    if (!updatesInitialized) {
+        updatesInitialized = true;
+        if (updateState.automatic) socket.emit("check_for_updates", {manual: false});
+    }
+}
+
+socket.on("update_status", (result) => {
+    const status = result.status;
+    const waiting = status === "checking" || status === "downloading" || status === "launching";
+    elements.checkUpdates.disabled = waiting;
+    elements.installUpdate.disabled = waiting;
+
+    if (status === "checking") {
+        elements.updateStatus.textContent = "Checking GitHub Releases...";
+    } else if (status === "up_to_date") {
+        elements.updateStatus.textContent = `Version ${result.version} is current.`;
+        elements.updateBadge.hidden = true;
+        elements.installUpdate.hidden = true;
+        elements.releaseLink.hidden = true;
+    } else if (status === "available") {
+        elements.updateStatus.textContent = `Version ${result.version} is available.`;
+        elements.updateBadge.hidden = false;
+        elements.installUpdate.hidden = false;
+        elements.installUpdate.disabled = false;
+        elements.releaseLink.href = result.release_url;
+        elements.releaseLink.hidden = false;
+        if (!result.manual) showToast(`SpoolTag Studio ${result.version} is available.`);
+    } else if (status === "downloading") {
+        elements.updateStatus.textContent = `Downloading version ${result.version}: ${result.progress || 0}%`;
+    } else if (status === "launching") {
+        elements.updateStatus.textContent = "Installer verified. Opening setup...";
+    } else if (status === "busy") {
+        elements.updateStatus.textContent = "Another update action is in progress.";
+    } else if (status === "error") {
+        elements.updateStatus.textContent = result.message || "The update check did not complete.";
+        elements.installUpdate.disabled = false;
+    }
+});
 
 function showToast(message) {
     elements.toast.textContent = message;
@@ -185,6 +270,7 @@ function readerOptionLabel(reader) {
 }
 
 function updateReaderState(state) {
+    if (state.updates) initializeUpdates(state.updates);
     const signature = JSON.stringify({readers: state.readers, selected: state.selected_reader});
     if (signature !== readerSignature) {
         const fragment = document.createDocumentFragment();

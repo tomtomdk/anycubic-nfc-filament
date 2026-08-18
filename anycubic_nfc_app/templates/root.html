@@ -31,13 +31,42 @@
             </span>
         </div>
         <div class="header-actions">
-            <button class="theme-toggle" id="themeToggle" type="button" title="Use dark mode" aria-label="Use dark mode" aria-pressed="false">
+            <button class="header-tool update-toggle" id="updateToggle" type="button" title="Software updates" aria-label="Software updates" aria-expanded="false" aria-controls="updatePopover">
+                <i data-lucide="cloud-download"></i>
+                <span class="update-badge" id="updateBadge" hidden></span>
+            </button>
+            <button class="header-tool theme-toggle" id="themeToggle" type="button" title="Use dark mode" aria-label="Use dark mode" aria-pressed="false">
                 <i data-lucide="moon" class="theme-moon"></i>
                 <i data-lucide="sun" class="theme-sun"></i>
             </button>
             <div class="header-device">
                 <span class="status-dot" id="connectionDot"></span>
                 <span id="connectionState">No reader</span>
+            </div>
+            <div class="update-popover" id="updatePopover" role="dialog" aria-labelledby="updateTitle" hidden>
+                <div class="update-heading">
+                    <div>
+                        <strong id="updateTitle">Software updates</strong>
+                        <small id="currentVersion">Version</small>
+                    </div>
+                    <button class="popover-close" id="closeUpdates" type="button" title="Close" aria-label="Close software updates">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <label class="update-setting" for="automaticUpdates">
+                    <span>Check automatically</span>
+                    <input id="automaticUpdates" type="checkbox" role="switch">
+                </label>
+                <p class="update-status" id="updateStatus" aria-live="polite">Ready to check.</p>
+                <button class="button secondary update-action" id="checkUpdates" type="button">
+                    <i data-lucide="refresh-cw"></i>
+                    Check now
+                </button>
+                <button class="button primary update-action" id="installUpdate" type="button" hidden>
+                    <i data-lucide="download"></i>
+                    Download and install
+                </button>
+                <a class="release-link" id="releaseLink" href="#" target="_blank" rel="noreferrer" hidden>View release</a>
             </div>
         </div>
     </header>

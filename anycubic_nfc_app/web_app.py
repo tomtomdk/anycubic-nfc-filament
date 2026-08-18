@@ -1,5 +1,7 @@
 import argparse
+import os
 import threading
+import time
 from typing import Any, Optional
 
 from flask import Flask, render_template, request
@@ -8,6 +10,8 @@ from flask_socketio import SocketIO
 from .filaments import FILAMENT_PRESETS
 from .nfc_manager import SpoolReader, NFCReader
 from .settings import load_settings, save_settings
+from .updater import UpdateError, check_for_update, download_update, launch_update_installer
+from .version import APP_VERSION
 
 # App settings
 app = Flask(__name__)
@@ -26,6 +30,8 @@ def default_error_handler(e):
 settings = load_settings()
 spool_reader: SpoolReader = SpoolReader(selected_reader=settings.get("selected_reader"))
 operation_lock = threading.Lock()
+update_lock = threading.Lock()
+available_update: Optional[dict[str, Any]] = None
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -53,7 +59,101 @@ def get_reader_state() -> dict[str, Any]:
         "active_reader": spool_reader.reader.get_active_reader_name(),
         "readers": NFCReader.get_available_readers(),
         "busy": operation_lock.locked(),
+        "updates": {
+            "current_version": APP_VERSION,
+            "automatic": bool(settings.get("automatic_update_checks", False)),
+        },
     }
+
+
+@socketio.on("set_update_preference")
+def set_update_preference(data: dict[str, Any]):
+    """Persist whether the app should check GitHub Releases on startup."""
+    settings["automatic_update_checks"] = data.get("automatic") is True
+    try:
+        save_settings(settings)
+    except OSError as error:
+        print(f"Unable to save settings: {error}")
+        socketio.emit("update_status", {
+            "status": "error",
+            "message": "The update preference could not be saved.",
+        }, to=request.sid)
+
+
+@socketio.on("check_for_updates")
+def check_for_updates(data: Optional[dict[str, Any]] = None):
+    """Check the fixed GitHub release feed without downloading anything."""
+    manual = bool((data or {}).get("manual", False))
+    socketio.start_background_task(_check_for_updates_async, request.sid, manual)
+
+
+def _check_for_updates_async(socket_id: str, manual: bool) -> None:
+    global available_update
+    if not update_lock.acquire(blocking=False):
+        socketio.emit("update_status", {"status": "busy"}, to=socket_id)
+        return
+    socketio.emit("update_status", {"status": "checking", "manual": manual}, to=socket_id)
+    try:
+        result = check_for_update()
+        available_update = result if result["available"] else None
+        if result["available"]:
+            socketio.emit("update_status", {
+                "status": "available",
+                "version": result["latest_version"],
+                "release_url": result["release_url"],
+                "manual": manual,
+            }, to=socket_id)
+        else:
+            socketio.emit("update_status", {
+                "status": "up_to_date",
+                "version": APP_VERSION,
+                "manual": manual,
+            }, to=socket_id)
+    except UpdateError as error:
+        socketio.emit("update_status", {
+            "status": "error",
+            "message": str(error),
+            "manual": manual,
+        }, to=socket_id)
+    finally:
+        update_lock.release()
+
+
+@socketio.on("install_update")
+def install_update():
+    """Download, verify, and launch the update selected by the user."""
+    socketio.start_background_task(_install_update_async, request.sid)
+
+
+def _install_update_async(socket_id: str) -> None:
+    if not update_lock.acquire(blocking=False):
+        socketio.emit("update_status", {"status": "busy"}, to=socket_id)
+        return
+    try:
+        update = available_update or check_for_update()
+        if not update.get("available"):
+            socketio.emit("update_status", {"status": "up_to_date", "version": APP_VERSION}, to=socket_id)
+            return
+
+        def report_progress(percentage: int) -> None:
+            socketio.emit("update_status", {
+                "status": "downloading",
+                "progress": percentage,
+                "version": update["latest_version"],
+            }, to=socket_id)
+
+        installer_path = download_update(update, progress=report_progress)
+        socketio.emit("update_status", {
+            "status": "launching",
+            "version": update["latest_version"],
+        }, to=socket_id)
+        launch_update_installer(installer_path)
+        time.sleep(0.8)
+        os._exit(0)
+    except UpdateError as error:
+        socketio.emit("update_status", {"status": "error", "message": str(error)}, to=socket_id)
+    finally:
+        update_lock.release()
 
 
 @socketio.on("select_reader")
