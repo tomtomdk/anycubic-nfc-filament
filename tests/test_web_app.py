@@ -23,7 +23,9 @@ def test_socket_reports_reader_inventory():
     messages = client.get_received()
     state = next(message["args"][0] for message in messages if message["name"] == "nfc_state")
     assert set(state) == {
-        "reader_connected", "selected_reader", "active_reader", "readers", "busy"
+        "reader_connected", "selected_reader", "active_reader", "readers", "busy", "updates"
     }
     assert isinstance(state["readers"], list)
+    assert state["updates"]["current_version"] == "0.3.0"
+    assert isinstance(state["updates"]["automatic"], bool)
     client.disconnect()

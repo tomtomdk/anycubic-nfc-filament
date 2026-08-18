@@ -1,5 +1,5 @@
 #define MyAppName "SpoolTag Studio"
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "0.3.0"
 #define MyAppPublisher "SpoolTag Studio Contributors"
 #define MyAppExeName "SpoolTagStudio.exe"
 
@@ -19,6 +19,8 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
+CloseApplications=yes
+RestartApplications=no
 SetupIconFile=..\anycubic_nfc_app\static\images\spooltag-icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 

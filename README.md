@@ -7,7 +7,7 @@ This is an unofficial community utility. Anycubic is a trademark of its respecti
 ## Download
 
 - [Portable Windows application](dist/SpoolTagStudio.exe)
-- [Windows installer](dist/installer/SpoolTagStudio-Setup-0.2.0.exe)
+- [Windows installer](dist/installer/SpoolTagStudio-Setup-0.3.0.exe)
 - [SHA-256 checksums](dist/SHA256SUMS.txt)
 
 ## Hardware
@@ -42,6 +42,10 @@ python -m anycubic_nfc_app --browser
 ```
 
 Reader selection is saved in `%APPDATA%\SpoolTag Studio\settings.json`. Automatic mode selects a tested reader and ignores untested interfaces such as a reader's SAM slot.
+
+## Updates
+
+Use the cloud-download button in the application header to check for releases manually. Automatic checks are optional and disabled by default. The app only downloads an installer after the user selects **Download and install**, verifies it against the release SHA-256 checksum, and then opens the normal visible installer.
 
 ## Build
 
