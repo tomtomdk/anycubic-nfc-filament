@@ -8,7 +8,12 @@ APP_NAME = "SpoolTag Studio"
 
 
 def _settings_path() -> Path:
-    base = Path(os.environ.get("APPDATA", Path.home()))
+    if appdata := os.environ.get("APPDATA"):
+        base = Path(appdata)
+    elif xdg_config_home := os.environ.get("XDG_CONFIG_HOME"):
+        base = Path(xdg_config_home)
+    else:
+        base = Path.home() / ".config"
     return base / APP_NAME / "settings.json"
 
 

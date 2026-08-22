@@ -17,8 +17,8 @@ from anycubic_nfc_app.updater import (
 from anycubic_nfc_app.version import APP_VERSION
 
 
-def release_payload(version="0.4.0"):
-    installer_name = f"SpoolTagStudio-Setup-{version}.exe"
+def release_payload(version="0.4.0", installer_name=None):
+    installer_name = installer_name or f"SpoolTagStudio-{version}-linux-amd64.deb"
     base = f"{RELEASE_DOWNLOAD_PREFIX}v{version}/"
     return {
         "tag_name": f"v{version}",
@@ -36,12 +36,26 @@ def test_semantic_versions_are_compared_numerically():
         parse_version("latest")
 
 
-def test_release_selects_fixed_repository_assets():
-    update = evaluate_release(release_payload(), current_version=APP_VERSION)
+def test_release_selects_linux_asset_for_current_architecture():
+    update = evaluate_release(
+        release_payload(), current_version=APP_VERSION, system="Linux", machine="x86_64"
+    )
 
     assert update["available"] is True
     assert update["latest_version"] == "0.4.0"
-    assert update["installer_name"] == "SpoolTagStudio-Setup-0.4.0.exe"
+    assert update["installer_name"] == "SpoolTagStudio-0.4.0-linux-amd64.deb"
+
+
+def test_release_preserves_windows_installer_support():
+    installer_name = "SpoolTagStudio-Setup-0.4.0.exe"
+    update = evaluate_release(
+        release_payload(installer_name=installer_name),
+        current_version=APP_VERSION,
+        system="Windows",
+        machine="AMD64",
+    )
+
+    assert update["installer_name"] == installer_name
 
 
 def test_release_rejects_untrusted_download_location():
@@ -49,14 +63,17 @@ def test_release_rejects_untrusted_download_location():
     release["assets"][0]["browser_download_url"] = "https://example.com/update.exe"
 
     with pytest.raises(UpdateError, match="unexpected download"):
-        evaluate_release(release, current_version=APP_VERSION)
+        evaluate_release(
+            release, current_version=APP_VERSION, system="Linux", machine="x86_64"
+        )
 
 
 def test_checksum_parser_matches_only_requested_asset():
     checksum = "a" * 64
-    contents = f"{'b' * 64}  another.exe\n{checksum}  installer/SpoolTagStudio-Setup-0.4.0.exe\n"
+    filename = "SpoolTagStudio-0.4.0-linux-amd64.deb"
+    contents = f"{'b' * 64}  another.deb\n{checksum}  installer/{filename}\n"
 
-    assert parse_checksum_file(contents, "SpoolTagStudio-Setup-0.4.0.exe") == checksum
+    assert parse_checksum_file(contents, filename) == checksum
 
 
 class FakeResponse(io.BytesIO):
@@ -74,7 +91,9 @@ class FakeResponse(io.BytesIO):
 def test_download_verifies_checksum_before_publishing_file(tmp_path, monkeypatch):
     installer = b"verified installer bytes"
     checksum = hashlib.sha256(installer).hexdigest()
-    update = evaluate_release(release_payload(), current_version=APP_VERSION)
+    update = evaluate_release(
+        release_payload(), current_version=APP_VERSION, system="Linux", machine="x86_64"
+    )
     checksum_file = f"{checksum}  installer/{update['installer_name']}\n".encode()
     progress = []
 
@@ -84,7 +103,9 @@ def test_download_verifies_checksum_before_publishing_file(tmp_path, monkeypatch
         return FakeResponse(installer)
 
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    with patch("anycubic_nfc_app.updater.urlopen", side_effect=fake_urlopen):
+    with patch("anycubic_nfc_app.updater.urlopen", side_effect=fake_urlopen), patch(
+        "anycubic_nfc_app.updater.platform.system", return_value="Linux"
+    ), patch("anycubic_nfc_app.updater.platform.machine", return_value="x86_64"):
         destination = download_update(update, progress=progress.append)
 
     assert destination.read_bytes() == installer

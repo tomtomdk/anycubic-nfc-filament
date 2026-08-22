@@ -1,8 +1,12 @@
 venv/
+.venv*/
+.build-deps/
 .idea/
 __pycache__/
 dist/*
 !dist/SpoolTagStudio.exe
+!dist/SpoolTagStudio-*-linux-*.tar.gz
+!dist/SpoolTagStudio-*-linux-*.deb
 !dist/SHA256SUMS.txt
 !dist/installer/
 dist/installer/*

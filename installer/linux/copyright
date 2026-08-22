@@ -1,0 +1,12 @@
+SpoolTag Studio
+
+Copyright: SpoolTag Studio contributors
+
+This is an unofficial community utility. Anycubic is a trademark of its
+respective owner and does not endorse this project.
+
+The NFC format research and initial implementation were based on
+Molodos/anycubic-nfc-filament. That upstream repository did not include a
+software license when this version was created. Public redistribution of
+derivative code requires permission from the upstream copyright holder or an
+independently implemented replacement for the format layer.

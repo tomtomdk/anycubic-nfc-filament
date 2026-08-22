@@ -148,7 +148,7 @@ socket.on("update_status", (result) => {
     } else if (status === "downloading") {
         elements.updateStatus.textContent = `Downloading version ${result.version}: ${result.progress || 0}%`;
     } else if (status === "launching") {
-        elements.updateStatus.textContent = "Installer verified. Opening setup...";
+        elements.updateStatus.textContent = "Installer verified. Opening the package installer...";
     } else if (status === "busy") {
         elements.updateStatus.textContent = "Another update action is in progress.";
     } else if (status === "error") {
