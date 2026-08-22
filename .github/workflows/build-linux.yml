@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - spooltag-studio
+    paths:
+      - .github/workflows/build-linux.yml
+      - anycubic_nfc_app/**
+      - tests/**
+      - build-linux.sh
+      - requirements*.txt
+      - SpoolTagStudio.spec
 
 permissions:
   contents: read
@@ -43,7 +50,7 @@ jobs:
         run: ./build-linux.sh
 
       - name: Upload Linux packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spooltag-studio-linux-amd64
           if-no-files-found: error

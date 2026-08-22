@@ -58,9 +58,18 @@ a = Analysis(
     optimize=1,
 )
 if sys.platform.startswith("linux"):
+    system_runtime_libraries = {
+        "libgcc_s.so.1",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgmodule-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libgthread-2.0.so.0",
+        "libstdc++.so.6",
+    }
     a.binaries = [
         binary for binary in a.binaries
-        if binary[0] not in {"libgcc_s.so.1", "libstdc++.so.6"}
+        if binary[0] not in system_runtime_libraries
     ]
 pyz = PYZ(a.pure)
 
