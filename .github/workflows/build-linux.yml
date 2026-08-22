@@ -2,6 +2,9 @@ name: Build Linux packages
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - spooltag-studio
 
 permissions:
   contents: read
