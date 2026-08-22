@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=SpoolTag Studio
+Comment=Read and write Anycubic-compatible NFC filament tags
+Exec=spooltag-studio
+Icon=spooltag-studio
+Terminal=false
+Categories=Utility;Electronics;
+Keywords=NFC;filament;3D printing;Anycubic;
+StartupNotify=true
+StartupWMClass=SpoolTag Studio

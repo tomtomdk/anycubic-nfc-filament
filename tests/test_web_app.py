@@ -26,6 +26,6 @@ def test_socket_reports_reader_inventory():
         "reader_connected", "selected_reader", "active_reader", "readers", "busy", "updates"
     }
     assert isinstance(state["readers"], list)
-    assert state["updates"]["current_version"] == "0.3.0"
+    assert state["updates"]["current_version"] == "0.3.1"
     assert isinstance(state["updates"]["automatic"], bool)
     client.disconnect()

@@ -1,13 +1,16 @@
 import hashlib
 import json
 import os
+import platform
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Callable, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from .platform_utils import external_environment
 from .settings import APP_NAME
 from .version import APP_VERSION
 
@@ -31,7 +34,30 @@ def parse_version(version: str) -> tuple[int, int, int]:
     return tuple(int(part) for part in match.groups())
 
 
-def evaluate_release(release: dict[str, Any], current_version: str = APP_VERSION) -> dict[str, Any]:
+def _installer_name(version: str, system: Optional[str] = None, machine: Optional[str] = None) -> str:
+    current_system = system or platform.system()
+    if current_system == "Windows":
+        return f"SpoolTagStudio-Setup-{version}.exe"
+    if current_system == "Linux":
+        architecture = (machine or platform.machine()).lower()
+        debian_architecture = {
+            "x86_64": "amd64",
+            "amd64": "amd64",
+            "aarch64": "arm64",
+            "arm64": "arm64",
+        }.get(architecture)
+        if debian_architecture:
+            return f"SpoolTagStudio-{version}-linux-{debian_architecture}.deb"
+        raise UpdateError(f"Automatic updates are not available for Linux {architecture}.")
+    raise UpdateError(f"Automatic updates are not available on {current_system}.")
+
+
+def evaluate_release(
+    release: dict[str, Any],
+    current_version: str = APP_VERSION,
+    system: Optional[str] = None,
+    machine: Optional[str] = None,
+) -> dict[str, Any]:
     latest_version = str(release.get("tag_name", "")).removeprefix("v")
     available = parse_version(latest_version) > parse_version(current_version)
     result: dict[str, Any] = {
@@ -44,9 +70,9 @@ def evaluate_release(release: dict[str, Any], current_version: str = APP_VERSION
         return result
 
     assets = {str(asset.get("name", "")): asset for asset in release.get("assets", [])}
-    installer_name = f"SpoolTagStudio-Setup-{latest_version}.exe"
+    installer_name = _installer_name(latest_version, system=system, machine=machine)
     if installer_name not in assets or "SHA256SUMS.txt" not in assets:
-        raise UpdateError("The latest release does not contain a complete Windows update.")
+        raise UpdateError("The latest release does not contain a complete update for this system.")
 
     installer_url = str(assets[installer_name].get("browser_download_url", ""))
     checksums_url = str(assets["SHA256SUMS.txt"].get("browser_download_url", ""))
@@ -100,7 +126,12 @@ def parse_checksum_file(contents: str, filename: str) -> str:
 
 
 def _update_directory() -> Path:
-    base = Path(os.environ.get("LOCALAPPDATA", Path.home()))
+    if local_appdata := os.environ.get("LOCALAPPDATA"):
+        base = Path(local_appdata)
+    elif xdg_cache_home := os.environ.get("XDG_CACHE_HOME"):
+        base = Path(xdg_cache_home)
+    else:
+        base = Path.home() / ".cache"
     return base / APP_NAME / "updates"
 
 
@@ -110,7 +141,9 @@ def download_update(
     timeout: float = 30.0,
 ) -> Path:
     filename = str(update.get("installer_name", ""))
-    if Path(filename).name != filename or not filename.endswith(".exe"):
+    version = str(update.get("latest_version", ""))
+    expected_name = _installer_name(version)
+    if Path(filename).name != filename or filename != expected_name:
         raise UpdateError("The release installer name is invalid.")
 
     checksum_bytes = _read_url(str(update["checksums_url"]), MAX_CHECKSUM_RESPONSE, timeout)
@@ -165,12 +198,30 @@ def download_update(
 
 
 def launch_update_installer(installer_path: Path) -> None:
-    if os.name != "nt" or installer_path.suffix.lower() != ".exe" or not installer_path.is_file():
+    if not installer_path.is_file():
         raise UpdateError("The update installer cannot be launched on this system.")
+
+    current_system = platform.system()
+    if current_system == "Windows" and installer_path.suffix.lower() == ".exe":
+        command = [str(installer_path), "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS"]
+    elif current_system == "Linux" and installer_path.suffix.lower() == ".deb":
+        if opener := shutil.which("xdg-open"):
+            command = [opener, str(installer_path)]
+        elif opener := shutil.which("gio"):
+            command = [opener, "open", str(installer_path)]
+        else:
+            raise UpdateError(
+                f"The package was downloaded to {installer_path}, but no graphical package opener is installed."
+            )
+    else:
+        raise UpdateError("The update installer cannot be launched on this system.")
+
     try:
         subprocess.Popen(
-            [str(installer_path), "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS"],
+            command,
             close_fds=True,
+            env=external_environment(),
+            start_new_session=current_system == "Linux",
         )
     except OSError as error:
-        raise UpdateError("Windows could not launch the update installer.") from error
+        raise UpdateError("The operating system could not launch the update installer.") from error

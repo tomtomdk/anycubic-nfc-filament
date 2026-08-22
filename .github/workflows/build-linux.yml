@@ -1,0 +1,49 @@
+name: Build Linux packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-amd64:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential \
+            gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.0 \
+            libpcsclite-dev \
+            pcscd \
+            python3-dev \
+            python3-gi \
+            python3-venv \
+            xdg-utils
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv --system-site-packages .venv-linux
+          .venv-linux/bin/python -m pip install --upgrade pip
+          .venv-linux/bin/python -m pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: .venv-linux/bin/python -m pytest -q
+
+      - name: Build packages
+        run: ./build-linux.sh
+
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: spooltag-studio-linux-amd64
+          if-no-files-found: error
+          path: |
+            dist/SpoolTagStudio-*-linux-amd64.deb
+            dist/SpoolTagStudio-*-linux-x86_64.tar.gz

@@ -1,14 +1,17 @@
 import argparse
+import os
 import socket
+import sys
 import threading
 import time
-import webbrowser
+from pathlib import Path
 
+from .platform_utils import open_external_url
 from .web_app import start_web_app
 
 
 def _available_port(preferred_port: int) -> int:
-    """Use the requested local port, or let Windows choose one if it is occupied."""
+    """Use the requested local port, or let the operating system choose one if occupied."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         try:
             probe.bind(("127.0.0.1", preferred_port))
@@ -32,6 +35,64 @@ def _serve(port: int) -> None:
     start_web_app(port=port, host="127.0.0.1")
 
 
+def _prepare_linux_typelib_path() -> None:
+    paths: list[str] = []
+
+    def add_paths(value: str) -> None:
+        for item in value.split(os.pathsep):
+            if item and item not in paths:
+                paths.append(item)
+
+    add_paths(os.environ.get("GI_TYPELIB_PATH", ""))
+    add_paths(os.environ.get("SPOOLTAG_GI_TYPELIB_PATH", ""))
+    for location in (
+        Path("/usr/lib/girepository-1.0"),
+        Path("/usr/local/lib/girepository-1.0"),
+        *Path("/usr/lib").glob("*/girepository-1.0"),
+        *Path("/usr/local/lib").glob("*/girepository-1.0"),
+    ):
+        if location.is_dir():
+            add_paths(str(location))
+
+    if paths:
+        os.environ["GI_TYPELIB_PATH"] = os.pathsep.join(paths)
+
+
+def _show_interface(url: str, browser_requested: bool = False) -> str:
+    if browser_requested:
+        open_external_url(url)
+        return "browser"
+
+    if sys.platform.startswith("linux"):
+        _prepare_linux_typelib_path()
+
+    try:
+        import webview
+    except ImportError:
+        open_external_url(url)
+        return "browser"
+
+    try:
+        webview.create_window(
+            "SpoolTag Studio",
+            url,
+            width=1180,
+            height=790,
+            min_size=(820, 620),
+            background_color="#f4f6f7",
+        )
+        if sys.platform.startswith("linux"):
+            webview.start(gui="gtk")
+        else:
+            webview.start()
+    except Exception as error:
+        print(f"Native desktop window unavailable ({error}); opening the default browser.")
+        open_external_url(url)
+        return "browser"
+
+    return "native"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create ACE-compatible NFC filament tags.")
     parser.add_argument("--browser", action="store_true", help="Open in the default browser instead of a desktop window")
@@ -46,24 +107,6 @@ def main() -> None:
     _wait_until_ready(port)
     url = f"http://127.0.0.1:{port}"
 
-    if args.browser:
-        webbrowser.open(url)
+    interface = _show_interface(url, browser_requested=args.browser)
+    if interface == "browser":
         server.join()
-        return
-
-    try:
-        import webview
-    except ImportError:
-        webbrowser.open(url)
-        server.join()
-        return
-
-    webview.create_window(
-        "SpoolTag Studio",
-        url,
-        width=1180,
-        height=790,
-        min_size=(820, 620),
-        background_color="#f4f6f7",
-    )
-    webview.start()
