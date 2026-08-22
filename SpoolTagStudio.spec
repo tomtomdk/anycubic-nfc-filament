@@ -65,6 +65,10 @@ if sys.platform.startswith("linux"):
         "libgmodule-2.0.so.0",
         "libgobject-2.0.so.0",
         "libgthread-2.0.so.0",
+        "libblkid.so.1",
+        "libmount.so.1",
+        "libpcre2-8.so.0",
+        "libselinux.so.1",
         "libstdc++.so.6",
     }
     a.binaries = [
